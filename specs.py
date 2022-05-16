@@ -50,7 +50,7 @@ def get_specs():
     for gpu in c.Win32_VideoController():
         specs['gpu'].append(gpu.Name)
         specs['gpu_driver'].append(gpu.DriverVersion)
-        specs['gpu_model'].append(gpu.AdapterRAM)
+        specs['gpu_model'].append(gpu.VideoProcessor)
         specs['gpu_vendor'].append(gpu.AdapterCompatibility)
         specs['gpu_ram'].append(gpu.AdapterRAM)
 
@@ -87,6 +87,77 @@ def get_specs():
         except Exception as e:
             drives.remove(x)
     specs['disk']['drives'] = drives
+
+    # get network from psutil
+    specs['network'] = {}
+    specs['network']['interfaces'] = []
+    for x in psutil.net_if_addrs().keys():
+        specs['network']['interfaces'].append(x)
+        specs['network'][x] = {}
+        specs['network'][x]['ip'] = psutil.net_if_addrs()[x][0].address
+        specs['network'][x]['netmask'] = psutil.net_if_addrs()[x][0].netmask
+        specs['network'][x]['broadcast'] = psutil.net_if_addrs()[x][0].broadcast
+        specs['network'][x]['mac'] = psutil.net_if_addrs()[x][1].address
+        specs['network'][x]['up'] = psutil.net_if_stats()[x].isup
+        specs['network'][x]['speed'] = str(psutil.net_if_stats()[x].speed)
+        specs['network'][x]['bytes_sent'] = str(psutil.net_io_counters(pernic=True)[x].bytes_sent)
+        specs['network'][x]['bytes_send_formatted'] = str(get_size(psutil.net_io_counters(pernic=True)[x].bytes_sent, "B"))
+        specs['network'][x]['bytes_recv'] = str(psutil.net_io_counters(pernic=True)[x].bytes_recv)
+        specs['network'][x]['bytes_recv_formatted'] = str(get_size(psutil.net_io_counters(pernic=True)[x].bytes_recv, "B"))
+        specs['network'][x]['packets_sent'] = str(psutil.net_io_counters(pernic=True)[x].packets_sent)
+        specs['network'][x]['packets_recv'] = str(psutil.net_io_counters(pernic=True)[x].packets_recv)
+        specs['network'][x]['errin'] = str(psutil.net_io_counters(pernic=True)[x].errin)
+        specs['network'][x]['errout'] = str(psutil.net_io_counters(pernic=True)[x].errout)
+        specs['network'][x]['dropin'] = str(psutil.net_io_counters(pernic=True)[x].dropin)
+        specs['network'][x]['dropout'] = str(psutil.net_io_counters(pernic=True)[x].dropout)
+    specs['network']['bytes_sent'] = str(psutil.net_io_counters().bytes_sent)
+    specs['network']['bytes_send_formatted'] = str(get_size(psutil.net_io_counters().bytes_sent, "B"))
+    specs['network']['bytes_recv'] = str(psutil.net_io_counters().bytes_recv)
+    specs['network']['bytes_recv_formatted'] = str(get_size(psutil.net_io_counters().bytes_recv, "B"))
+    specs['network']['packets_sent'] = str(psutil.net_io_counters().packets_sent)
+    specs['network']['packets_recv'] = str(psutil.net_io_counters().packets_recv)
+    specs['network']['errin'] = str(psutil.net_io_counters().errin)
+    specs['network']['errout'] = str(psutil.net_io_counters().errout)
+    specs['network']['dropin'] = str(psutil.net_io_counters().dropin)
+    specs['network']['dropout'] = str(psutil.net_io_counters().dropout)
+
+    # get load from psutil
+    specs['load'] = {}
+    specs['load']['1min'] = str(psutil.getloadavg()[0])
+    specs['load']['5min'] = str(psutil.getloadavg()[1])
+    specs['load']['15min'] = str(psutil.getloadavg()[2])
+
+    # get all processes from psutil
+    specs['processes'] = {}
+    specs['processes']['total'] = str(len(psutil.pids()))
+    # get all running processes from psutil
+
+    temprunning = []
+    tempsleeping = []
+    tempstopped = []
+    tempzombie = []
+    tempall = []
+
+    for x in psutil.pids():
+        try:
+            a = psutil.Process(x)
+            if a.status() == 'running':
+                temprunning.append(a)
+            elif a.status() == 'sleeping':
+                tempsleeping.append(a)
+            elif a.status() == 'stopped':
+                tempstopped.append(a)
+            elif a.status() == 'zombie':
+                tempzombie.append(a)
+            tempall.append(a)
+        except psutil.NoSuchProcess:
+            pass
+
+    specs['processes']['running'] = str(len(temprunning))
+    specs['processes']['sleeping'] = str(len(tempsleeping))
+    specs['processes']['stopped'] = str(len(tempstopped))
+    specs['processes']['zombie'] = str(len(tempzombie))
+    specs['processes']['total'] = str(len(tempall))
 
     return specs
 

@@ -17,6 +17,10 @@ img {
     height: 36px;
 }
 
+.wait {
+    cursor = 'wait';
+}
+
 #ramChart {
     width: 100px;
     height: 100px;

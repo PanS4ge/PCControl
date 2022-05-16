@@ -4,7 +4,14 @@ var discCharts = [];
 var ramChartNameToCheck = null;
 var swapChartNameToCheck = null;
 
+var runningChartNameToCheck = null;
+var sleepingChartNameToCheck = null;
+var stoppedChartNameToCheck = null;
+var zombieChartNameToCheck = null;
+
 var panels = []
+
+var data = "";
 
 function isPanels(panel) {
     for (var i = 0; i < panels.length; i++) {
@@ -14,7 +21,10 @@ function isPanels(panel) {
     }
     return false
 }
+function letUpdate(){
 
+    return ramChartNameToCheck != null || swapChartNameToCheck != null || runningChartNameToCheck != null || sleepingChartNameToCheck != null || stoppedChartNameToCheck != null || zombieChartNameToCheck != null
+}
 function changePanel(){
     //alert("hash changed")
     var frag = location.hash.substr(1);
@@ -40,13 +50,12 @@ function changePanel(){
         alert("Panel not found")
     }
 }
-
 window.addEventListener('hashchange', function() {
     changePanel()
-}, false);
 
+}, false);
 function UpdateRamChart(nameee, ramtotal, ramused) {
-    if(ramChartNameToCheck != null && swapChartNameToCheck != null){
+    if(letUpdate()){
     const chart = nameee.getContext('2d');
     //console.log(chart);
     //console.log(chart.chart);
@@ -63,7 +72,6 @@ function UpdateRamChart(nameee, ramtotal, ramused) {
     ramChartNameToCheck.update();
     }
 }
-
 function ramChart(nameee, ramtotal, ramused) {
     const ctx = nameee.getContext('2d');
     const name = new Chart(ctx, {
@@ -98,7 +106,34 @@ function ramChart(nameee, ramtotal, ramused) {
     });
     return name;
 }
-
+function lineChart(nameee, datab, label) {
+    const labels = [0];
+    const datae = {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: [datab],
+        fill: false,
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1
+      }]
+    };
+    const ctx = nameee.getContext('2d');
+    const name = new Chart(ctx, datae);
+    return name;
+}
+function UpdateLineChart(nameee, dateea) {
+    if(letUpdate()){
+        const chart = nameee.getContext('2d');
+        //console.log(chart);
+        //console.log(chart.chart);
+        //console.log(chart.chart.config)
+        chart.chart.config._config.datasets[0].data.push(dateea);
+        chart.chart.config._config.labels.push(chart.chart.config._config.length);
+        console.log(chart)
+        chart.update();
+    }
+}
 function updateData(){
     $.getJSON("http://localhost:8081/data", function(data) {
         console.log(data);
@@ -112,7 +147,7 @@ function updateData(){
         document.getElementById("ramfree").innerHTML = "Total Available: " + data["ram"]["available"];
 
         discCharts.forEach(function(chart, index) {
-            console.log(chart)
+            //console.log(chart)
             UpdateRamChart(chart, data['disk'][index].free, data['disk'][index].used);
         });
         //UpdateRamChart("diskChart" + x, data['disk'][x]["free"], data['disk'][x]["used"]);
@@ -122,7 +157,6 @@ function updateData(){
         //});
     });
 }
-
 function createDiskData(){
     /* <div class="center">
         <img id="diskicon" src="icons/hhd.png", width="36">
@@ -134,7 +168,7 @@ function createDiskData(){
             </details>
         </div> */
     discCharts = [];
-    $.getJSON("http://localhost:8081/data", function(data) {
+    //$.getJSON("http://localhost:8081/data", function(data) {
         data["disk"]["drives"].forEach(function(x){
             try{
                 var center = document.createElement("div");
@@ -172,6 +206,7 @@ function createDiskData(){
                 //document.getElementById("hddpanel").appendChild(br);
                 discCharts.push(ramChart(diskChart, data['disk'][x]["free"], data['disk'][x]["used"]));
 
+                var div = document.createElement("div");
                 var a = document.createElement("a");
                 // get index of x in data["disk"]["drives"]
                 a.href = "#disk" + index;
@@ -179,49 +214,72 @@ function createDiskData(){
                 img.src = "icons/hhd.png";
                 img.width = "36";
                 a.appendChild(img);
-                document.getElementById("diskiconsidebar").appendChild(a);
+                div.appendChild(a);
+                document.getElementById("diskiconsidebar").appendChild(div);
             }
             catch(err){
 
             }
-        });
+        //});
     });
 }
-
 function generateGpuData(datalist) {
-    // iterate through the data list and create a new object for each item
-    for (var i = 0; i < datalist.length; i++) {
-        var data = datalist[i];
-        // create a new div for each item
-        var div = document.createElement("div");
-        // set the class of the div
-        div.setAttribute("class", "center36px");
-        div.id = "gpu" + i + "panel";
-        // create a new h1 for each item
-        var img = document.createElement("img");
-        // set source of the image
-        img.setAttribute("src", "icons/video-card.png");
-        img.setAttribute("width", "36");
-        // put img in the div
-        div.appendChild(img);
-        var h2 = document.createElement("h2");
-        div.appendChild(h2);
-        h2.innerHTML = data;
-        // put div in the main div
-        document.getElementById("gpupanel").appendChild(div);
-        div.classList.add("hidden")
+    //$.getJSON("http://localhost:8081/data", function(data) {
+        // iterate through the data list and create a new object for each item
+        for (var i = 0; i < datalist.length; i++) {
+            var dataa = "(" + i + ") " + datalist[i];
+            // create a new div for each item
+            var div = document.createElement("div");
+            // set the class of the div
+            div.setAttribute("class", "center");
+            div.id = "gpu" + i + "panel";
+            // create a new h1 for each item
+            var img = document.createElement("img");
+            // set source of the image
+            img.setAttribute("src", "icons/video-card.png");
+            img.setAttribute("width", "36");
+            // put img in the div
+            div.appendChild(img);
+            var h2 = document.createElement("h2");
+            div.appendChild(h2);
+            h2.innerHTML = dataa;
 
-        var a = document.createElement("a");;
-        a.href = "#gpu" + i;
-        var img = document.createElement("img");
-        img.src = "icons/video-card.png";
-        img.width = "36";
-        a.appendChild(img);
-        document.getElementById("gpuiconsidebar").appendChild(a);
-    }
+            //console.log("GPU WAS EXECUTED FOR " + i);
+
+            var Driver = document.createElement("h3");
+            var Model = document.createElement("h3");
+            var Vendor = document.createElement("h3");
+            var RAM = document.createElement("h3");
+            div.appendChild(Driver);
+            div.appendChild(Model);
+            div.appendChild(Vendor);
+            div.appendChild(RAM);
+            /*console.log(data)
+            console.log(data["gpu_driver"]);
+            console.log(data["gpu_model"]);
+            console.log(data["gpu_vendor"]);
+            console.log(data["gpu_ram"]);
+            console.log(i)*/
+            Driver.innerHTML = "Driver - " + data["gpu_driver"][i];
+            Model.innerHTML = "Model - " + data["gpu_model"][i];
+            Vendor.innerHTML = "Vendor - " + data["gpu_vendor"][i];
+            RAM.innerHTML = "RAM - " + data["gpu_ram"][i];
+
+            // put div in the main div
+            document.getElementById("gpupanel").appendChild(div);
+            div.classList.add("hidden")
+
+            var a = document.createElement("a");;
+            a.href = "#gpu" + i;
+            var img = document.createElement("img");
+            img.src = "icons/video-card.png";
+            img.width = "36";
+            a.appendChild(img);
+            document.getElementById("gpuiconsidebar").appendChild(a);
+        }
+    //});
 }
-
-function getDataOneTime() {
+function takeCareOfPanels(){
     panels.push("content") // normal panel
 
     panels.push("windows")
@@ -230,39 +288,72 @@ function getDataOneTime() {
     panels.push("ram")
     //panels.push("hdd")
     panels.push("swap")
+    panels.push("processes")
 
     var frag = location.hash.substr(1);
-    if (frag == "") {
+    if (frag == "" || !isPanels(frag)) {
         location.hash = "#content";
     }
 
-    changePanel();
-
-    $.getJSON("http://localhost:8081/data", function(data) {
-        data["disk"]["drives"].forEach(function(x){
+    $.getJSON("http://localhost:8081/data", function(tada) {
+        tada["disk"]["drives"].forEach(function(x){
             // get index of drive
-            var index = data["disk"]["drives"].indexOf(x)
+            var index = tada["disk"]["drives"].indexOf(x)
             panels.push("disk" + index)
         });
-        data["gpu"].forEach(function(x){
-            var index = data["gpu"].indexOf(x)
+        tada["gpu"].forEach(function(x){
+            var index = tada["gpu"].indexOf(x)
             panels.push("gpu" + index)
         });
     });
-
+}
+function getDataOneTime() {
     $.getJSON("http://localhost:8081/data", function(data) {
-        console.log(data);
+        takeCareOfPanels();
+        setDataInCategories();
+        changePanel();
         ramChartNameToCheck = ramChart(document.getElementById("ramChart"), data["ram"]["available_bytes"], data["ram"]["used_bytes"]);
+        document.getElementById("ramiconsidebar").classList.remove("hidden")
         swapChartNameToCheck = ramChart(document.getElementById("swapChart"), data["ram"]["swap_free_bytes"], data["ram"]["swap_bytes"]);
-
-        document.getElementById("windowsversion").innerHTML = "You are running " + data["os"] + " " + data["os_version"];
-        //document.getElementById("cpuinfo").innerHTML = "Vendor ID Raw - " + data["cpu"]["vendor_id_raw"] + "<br />" + "Mhz - " + data["cpu"]["hz_actual_friendly"];
-        document.getElementById("cpu").innerHTML = data["cpu"]["brand_raw"] + " x" + data["cpu"]["count"];
+        document.getElementById("swapiconsidebar").classList.remove("hidden")
         generateGpuData(data["gpu"]);
         createDiskData(data["disk"]);
+        runningChartNameToCheck = lineChart(document.getElementById("runningChart"), data["processes"]["running"], "Running");
+        sleepingChartNameToCheck = lineChart(document.getElementById("sleepingChart"), data["processes"]["sleeping"], "Sleeping");
+        stoppedChartNameToCheck = lineChart(document.getElementById("stoppedChart"), data["processes"]["stopped"], "Stopped");
+        zombieChartNameToCheck = lineChart(document.getElementById("zombieChart"), data["processes"]["zombie"], "Zombie");
+        document.getElementById("processesiconsidebar").classList.remove("hidden")
     });
 }
+function setDataInCategories(){
+    $.getJSON("http://localhost:8081/data", function(data) {
+        //console.log(data)
+        document.getElementById("windowsversion").innerHTML = "You are running " + data["os"] + " " + data["os_release"];
+        document.getElementById("cpu").innerHTML = data["cpu"]["brand_raw"] + " x" + data["cpu"]["count"];
+        document.getElementById("manufacturer").innerHTML = "Manufacturer - " + data['manufacturer']
+        document.getElementById("model").innerHTML = "Model - " + data['model']
+        document.getElementById("osversion").innerHTML = "OS Version - " + data['os_version']
+        document.getElementById("hostname").innerHTML = "Computer name - " + data['hostname']
+        document.getElementById("boot_time").innerHTML = "Boot Time - " + data['boot_time']
+        // remove class hidden from id windowsiconsidebar
+        document.getElementById("windowsiconsidebar").classList.remove("hidden")
 
+        document.getElementById("cpu_arch_string_raw").innerHTML = "CPU Architecture - " + data['cpu']['arch_string_raw'] + " / " + data['cpu']['arch']
+        document.getElementById("cpu_vendor_id_raw").innerHTML = "Vendor ID - " + data['cpu']['vendor_id_raw']
+        document.getElementById("cpu_hz").innerHTML = "CPU Frequency - " + data['cpu']['hz_actual_friendly']
+        document.getElementById("cpu_adhz").innerHTML = "Advertised Freq - " + data['cpu']['hz_advertised_friendly']
+        document.getElementById("cpu_model").innerHTML = "Model - " + data['cpu']['model']
+        document.getElementById("cpu_family").innerHTML = "Family - " + data['cpu']['family']
+        document.getElementById("cpu_info").innerHTML = "Data CPU Ver. - " + data['cpu']['cpuinfo_version_string']
+        var temp = ""
+        data['cpu']['flags'].forEach(function(x){
+            temp += x + "<br>"
+        });
+        document.getElementById("cpu_flags").innerHTML = temp
+
+        document.getElementById("cpuiconsidebar").classList.remove("hidden")
+    });
+}
 function getData(){
     $.getJSON("http://localhost:8081/data", function(data) {
         UpdateRamChart(swapChartNameToCheck, data["ram"]["swap_free_bytes"], data["ram"]["swap_bytes"]);
@@ -274,6 +365,17 @@ function getData(){
         document.getElementById("ramtotal").innerHTML = "Total RAM: " + data["ram"]["total"];
         document.getElementById("ramused").innerHTML = "Total Used: " + data["ram"]["used"];
         document.getElementById("ramfree").innerHTML = "Total Available: " + data["ram"]["available"];
+
+        UpdateLineChart(runningChartNameToCheck, data["processes"]["running"]);
+        UpdateLineChart(sleepingChartNameToCheck, data["processes"]["sleeping"]);
+        UpdateLineChart(zombieChartNameToCheck, data["processes"]["zombie"]);
+        UpdateLineChart(stoppedChartNameToCheck, data["processes"]["stopped"]);
+
+        document.getElementById("running").innerHTML = "Running: " + data["processes"]["running"];
+        document.getElementById("sleeping").innerHTML = "Sleeping: " + data["processes"]["sleeping"];
+        document.getElementById("stopped").innerHTML = "Stopped: " + data["processes"]["stopped"];
+        document.getElementById("zombie").innerHTML = "Zombie: " + data["processes"]["zombie"];
+        document.getElementById("total").innerHTML = "Total: " + data["processes"]["total"];
     });
     try {
         updateDiskData();
@@ -281,6 +383,10 @@ function getData(){
     catch(err){
     }
 }
+$.getJSON("http://localhost:8081/data", function(datae) {
+    data = datae;
+
+})
 
 getDataOneTime();
 setInterval(getData, 1000);
